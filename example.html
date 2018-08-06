@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <script src="form-validate.js"></script>
+</head>
+<body>
+  <form action="" formGroup="testForm">
+    <div formControl="name" class="form-control">
+      <input type="text" />
+    </div>
+    <button submitButton type="button">Submit</button>
+  </form>
+  <style>
+    .form-control .error {
+      color: tomato;
+    }
+  </style>
+  <script>
+    const rules = {
+      name: [
+        {
+          required: true,
+          message: 'Please fill in field'
+        }
+      ]
+    };
+
+    new window.ZedFormValidate.FormGroup('testForm', () => {
+      console.log('submitted');
+    }, rules);
+  </script>
+</body>
+</html>
