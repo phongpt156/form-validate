@@ -5,6 +5,10 @@
 }(this, (function () {
   'use strict'
 
+  function isDef (v) {
+    return v !== undefined && v !== null
+  }
+
   const ZedFormValidate = {
     FormGroup: class FormGroup {
       constructor(name, callback, rules) {
@@ -51,17 +55,21 @@
         this.errorMessage = '';
         this.errorMessages = {};
         this.errorLabel = '';
+        this.maxValue = '';
+        this.minValue = '';
         this.required = false;
       }
       validate() {
         const value = this.ref.querySelector('input').value;
         this.valid = true;
 
-        if (this.required) {
-          if (!value) {
-            this.valid = false;
-            this.errorMessage = this.errorMessages.required;
-          }
+        if (Number.isInteger(this.maxValue) && this.maxValue < Number(value)) {
+          this.valid = false;
+          this.errorMessage = this.errorMessages.maxValue;
+        }
+        if (this.required && !value) {
+          this.valid = false;
+          this.errorMessage = this.errorMessages.required;
         }
 
         if (this.valid) {
@@ -74,9 +82,15 @@
       }
       addRules(rules) {
         for (const rule of rules) {
-          if (rule.required) {
+          if (isDef(rule.required)) {
             this.required = rule.required;
             this.errorMessages.required = rule.message;
+          } else if (isDef(rule.max)) {
+            this.maxValue = rule.max;
+            this.errorMessages.maxValue = rule.message;
+          } else if (isDef(rule.min)) {
+            this.minValue = rule.min;
+            this.errorMessages.minValue = rule.message;
           }
         }
       }
