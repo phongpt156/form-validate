@@ -67,6 +67,10 @@
           this.valid = false;
           this.errorMessage = this.errorMessages.maxValue;
         }
+        if (Number.isInteger(this.minValue) && this.minValue > Number(value)) {
+          this.valid = false;
+          this.errorMessage = this.errorMessages.minValue;
+        }
         if (this.required && !value) {
           this.valid = false;
           this.errorMessage = this.errorMessages.required;
