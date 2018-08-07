@@ -24,11 +24,14 @@
         }
 
         for (const key of Object.keys(rules)) {
-          const formControl = this.formControls.find(item => item.name === key);
+          const formControl = this.getFormControl(key);
           formControl.addRules(rules[key]);
         }
 
         this.ref.querySelector('[submitButton]').addEventListener('click', this.submit.bind(this));
+      }
+      getFormControl(name) {
+        return this.formControls.find(item => item.name === name);
       }
       validate() {
         this.valid = true;
@@ -36,6 +39,7 @@
         for (const formControl of this.formControls) {
           if (!formControl.validate()) {
             this.valid = false;
+            break;
           }
         }
       }
@@ -44,6 +48,34 @@
 
         if (this.valid) {
           this.callback();
+          this.resetError();
+        }
+      }
+      reset() {
+        this.valid = true;
+
+        for (const formControl of this.formControls) {
+          formControl.reset();
+        }
+      }
+      resetError() {
+        this.valid = true;
+
+        for (const formControl of this.formControls) {
+          formControl.resetError();
+        }
+      }
+      addErrors(errors) {
+        let focus = false;
+
+        for (const key of Object.keys(errors)) {
+          const formControl = this.getFormControl(key);
+          const errorMessage = Array.isArray(errors[key]) ? errors[key][0] : errors[key];
+          formControl.addErrorLabel(errorMessage);
+          if (!focus) {
+            formControl.focus();
+            focus = true;
+          }
         }
       }
     },
@@ -54,32 +86,39 @@
         this.valid = true;
         this.errorMessage = '';
         this.errorMessages = {};
-        this.errorLabel = '';
-        this.maxValue = '';
-        this.minValue = '';
+        this.errorLabel = document.createElement('div');
+        this.errorLabel.innerHTML = '<p class="error"></p>';
+        this.maxLength = '';
+        this.minLength = '';
         this.required = false;
       }
+      get value() {
+        return this.ref.querySelector('input').value;
+      }
+      set value(value) {
+        this.ref.querySelector('input').value = value;
+      }
       validate() {
-        const value = this.ref.querySelector('input').value;
         this.valid = true;
 
-        if (Number.isInteger(this.maxValue) && this.maxValue < Number(value)) {
+        if (this.maxLength && this.maxLength < this.value.length) {
           this.valid = false;
-          this.errorMessage = this.errorMessages.maxValue;
+          this.errorMessage = this.errorMessages.maxLength;
         }
-        if (Number.isInteger(this.minValue) && this.minValue > Number(value)) {
+        if (this.minLength && this.minLength > this.value.length) {
           this.valid = false;
-          this.errorMessage = this.errorMessages.minValue;
+          this.errorMessage = this.errorMessages.minLength;
         }
-        if (this.required && !value) {
+        if (this.required && !this.value.trim()) {
           this.valid = false;
           this.errorMessage = this.errorMessages.required;
         }
 
-        if (this.valid) {
-          this.removeErrorLabel();
-        } else {
-          this.addErrorLabel();
+        this.removeErrorLabel();
+
+        if (!this.valid) {
+          this.focus();
+          this.addErrorLabel(this.errorMessage);
         }
 
         return this.valid;
@@ -90,26 +129,36 @@
             this.required = rule.required;
             this.errorMessages.required = rule.message;
           } else if (isDef(rule.max)) {
-            this.maxValue = rule.max;
-            this.errorMessages.maxValue = rule.message;
+            this.maxLength = rule.max;
+            this.errorMessages.maxLength = rule.message;
           } else if (isDef(rule.min)) {
-            this.minValue = rule.min;
-            this.errorMessages.minValue = rule.message;
+            this.minLength = rule.min;
+            this.errorMessages.minLength = rule.message;
           }
         }
       }
-      addErrorLabel() {
-        this.errorLabel = document.createElement('div');
-        this.errorLabel.innerHTML = `
-          <p class="error">${this.errorMessage}</>
-        `;
+      addErrorLabel(errorMessage) {
+        this.errorLabel.querySelector('.error').innerText = errorMessage;
 
         this.ref.appendChild(this.errorLabel);
       }
       removeErrorLabel() {
-        if (this.ref.contains(this.errorLabel)) {
+        if (this.errorLabel && this.errorLabel.nodeType && this.ref.contains(this.errorLabel)) {
           this.ref.removeChild(this.errorLabel);
         }
+      }
+      reset() {
+        this.value = '';
+        this.resetError();
+      }
+      resetError() {
+        this.valid = true;
+        this.errorMessage = '';
+        this.errorLabel.querySelector('.error').innerText = '';
+        this.removeErrorLabel();
+      }
+      focus() {
+        this.ref.querySelector('input').focus();
       }
     }
   };
