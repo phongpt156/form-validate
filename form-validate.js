@@ -5,18 +5,34 @@
 }(this, (function () {
   'use strict'
 
-  function isDef (v) {
-    return v !== undefined && v !== null
-  }
-
   const ZedFormValidate = {
+    toString: Object.prototype.toString,
+    isDef: v => {
+      return v !== undefined && v !== null;
+    },
+    isFormElement: element => {
+      return toString.call(element) === '[object HTMLFormElement]';
+    },
+    isRegExp: regexp => {
+      return toString.call(regexp) === '[object RegExp]';
+    },
     FormGroup: class FormGroup {
-      constructor(name, callback, rules) {
+      constructor(name, rules, callback) {
+        if (!(this instanceof window.ZedFormValidate.FormGroup)) {
+          throw new Error('ZedFormValidate: FormGroup is a constructor and should be called with the `new` keyword');
+        }
         this.name = name;
         this.ref = document.querySelector(`[formGroup=${name}]`);
         this.callback = callback;
         this.valid = true;
         this.formControls = [];
+
+        if (!window.ZedFormValidate.isDef(this.ref)) {
+          throw new Error(`FormGroup: Not found form have name: ${name}`);
+        }
+        if (!window.ZedFormValidate.isFormElement(this.ref)) {
+          throw new Error(`FormGroup: ${name} is not a form element`);
+        }
 
         const formControls = this.ref.querySelectorAll('[formControl]');
         for (const formControl of formControls) {
@@ -28,7 +44,10 @@
           formControl.addRules(rules[key]);
         }
 
-        this.ref.querySelector('[submitButton]').addEventListener('click', this.submit.bind(this));
+        const submitButton = this.ref.querySelector('[submitButton]');
+        if (submitButton) {
+          submitButton.addEventListener('click', this.submit.bind(this));
+        }
       }
       getFormControl(name) {
         return this.formControls.find(item => item.name === name);
@@ -47,7 +66,9 @@
         this.validate();
 
         if (this.valid) {
-          this.callback();
+          if (typeof this.callback === 'function') {
+            this.callback();
+          }
           this.resetError();
         }
       }
@@ -101,17 +122,24 @@
       validate() {
         this.valid = true;
 
-        if (this.maxLength && this.maxLength < this.value.length) {
-          this.valid = false;
-          this.errorMessage = this.errorMessages.maxLength;
-        }
-        if (this.minLength && this.minLength > this.value.length) {
-          this.valid = false;
-          this.errorMessage = this.errorMessages.minLength;
-        }
         if (this.required && !this.value.trim()) {
           this.valid = false;
           this.errorMessage = this.errorMessages.required;
+        } else if (this.maxLength && this.maxLength < this.value.length) {
+          this.valid = false;
+          this.errorMessage = this.errorMessages.maxLength;
+        } else if (this.minLength && this.minLength > this.value.length) {
+          this.valid = false;
+          this.errorMessage = this.errorMessages.minLength;
+        }  else if (this.maxValue && this.maxValue < this.value) {
+          this.valid = false;
+          this.errorMessage = this.errorMessages.maxValue;
+        }  else if (this.minValue && this.minValue > this.value) {
+          this.valid = false;
+          this.errorMessage = this.errorMessages.minValue;
+        } else if (this.validator && !this.validator.test(this.value)) {
+          this.valid = false;
+          this.errorMessage = this.errorMessages.validator;
         }
 
         this.removeErrorLabel();
@@ -125,15 +153,28 @@
       }
       addRules(rules) {
         for (const rule of rules) {
-          if (isDef(rule.required)) {
+          if (window.ZedFormValidate.isDef(rule.required)) {
             this.required = rule.required;
             this.errorMessages.required = rule.message;
-          } else if (isDef(rule.max)) {
-            this.maxLength = rule.max;
+          } else if (window.ZedFormValidate.isDef(rule.maxLength)) {
+            this.maxLength = rule.maxLength;
             this.errorMessages.maxLength = rule.message;
-          } else if (isDef(rule.min)) {
-            this.minLength = rule.min;
+          } else if (window.ZedFormValidate.isDef(rule.minLength)) {
+            this.minLength = rule.minLength;
             this.errorMessages.minLength = rule.message;
+          } else if (window.ZedFormValidate.isDef(rule.maxValue)) {
+            this.maxValue = rule.maxValue;
+            this.errorMessages.maxValue = rule.message;
+          }  else if (window.ZedFormValidate.isDef(rule.minValue)) {
+            this.minValue = rule.minValue;
+            this.errorMessages.minValue = rule.message;
+          } else if (window.ZedFormValidate.isDef(rule.validator)) {
+            if (!window.ZedFormValidate.isRegExp(rule.validator)) {
+              throw new Error('ZedFormValidate: validator must be a regex string');
+            };
+
+            this.validator = rule.validator;
+            this.errorMessages.validator = rule.message;
           }
         }
       }
