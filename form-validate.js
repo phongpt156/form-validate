@@ -92,10 +92,12 @@
         for (const key of Object.keys(errors)) {
           const formControl = this.getFormControl(key);
           const errorMessage = Array.isArray(errors[key]) ? errors[key][0] : errors[key];
-          formControl.addErrorLabel(errorMessage);
-          if (!focus) {
-            formControl.focus();
-            focus = true;
+          if (formControl) {
+            formControl.addErrorLabel(errorMessage);
+            if (!focus) {
+              formControl.focus();
+              focus = true;
+            }
           }
         }
       }
@@ -108,7 +110,8 @@
         this.errorMessage = '';
         this.errorMessages = {};
         this.errorLabel = document.createElement('div');
-        this.errorLabel.innerHTML = '<p class="error"></p>';
+        this.errorLabel.classList.add('error');
+        this.errorLabel.innerHTML = '<p></p>';
         this.maxLength = '';
         this.minLength = '';
         this.required = false;
@@ -179,7 +182,7 @@
         }
       }
       addErrorLabel(errorMessage) {
-        this.errorLabel.querySelector('.error').innerText = errorMessage;
+        this.errorLabel.querySelector('.error > p').innerText = errorMessage;
 
         this.ref.appendChild(this.errorLabel);
       }
@@ -195,7 +198,7 @@
       resetError() {
         this.valid = true;
         this.errorMessage = '';
-        this.errorLabel.querySelector('.error').innerText = '';
+        this.errorLabel.querySelector('.error > p').innerText = '';
         this.removeErrorLabel();
       }
       focus() {
